@@ -545,11 +545,13 @@ public class BSImagePicker extends BottomSheetDialogFragment implements LoaderMa
 
     private File createImageFile() {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
-        String imageFileName = folderName + "/JPEG_" + timeStamp + "_";
+        String imageFileName;
         File storageDir;
-        if(getContext() != null) {
-            storageDir = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "/Repsly");
-        } else{
+        if (getContext() != null) {
+            imageFileName = "JPEG_" + timeStamp + "_";
+            storageDir = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "/" + folderName);
+        } else {
+            imageFileName = folderName + "/JPEG_" + timeStamp + "_";
             storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         }
 
@@ -572,7 +574,6 @@ public class BSImagePicker extends BottomSheetDialogFragment implements LoaderMa
         currentPhotoUri = Uri.fromFile(image);
         return image;
     }
-
 
     private void notifyGallery() {
         if (getContext() == null) {
@@ -773,7 +774,6 @@ public class BSImagePicker extends BottomSheetDialogFragment implements LoaderMa
             this.openCameraOnly = openCameraOnly;
             return this;
         }
-
 
         public BSImagePicker build() {
             Bundle args = new Bundle();
