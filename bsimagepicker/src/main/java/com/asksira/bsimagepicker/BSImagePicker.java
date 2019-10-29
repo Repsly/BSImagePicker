@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -523,12 +524,19 @@ public class BSImagePicker extends BottomSheetDialogFragment implements LoaderMa
         Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePhotoIntent.resolveActivity(getContext().getPackageManager()) != null) {
             File photoFile;
-            photoFile = createImageFile();
+            photoFile = createImageFile(getContext());
 
             if (photoFile != null) {
-                Uri photoURI = FileProvider.getUriForFile(getContext(),
+                Uri photoURI;
+                try {
+                    photoURI = FileProvider.getUriForFile(getContext(),
                                                           providerAuthority,
                                                           photoFile);
+                } catch (IllegalArgumentException e) {
+                    StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                    StrictMode.setVmPolicy(builder.build());
+                    photoURI = Uri.fromFile(photoFile);
+                }
                 takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 List<ResolveInfo> resolvedIntentActivities = getContext().getPackageManager()
                                                                          .queryIntentActivities(takePhotoIntent,
@@ -543,17 +551,12 @@ public class BSImagePicker extends BottomSheetDialogFragment implements LoaderMa
         }
     }
 
-    private File createImageFile() {
+    private File createImageFile(Context context) {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
         String imageFileName;
         File storageDir;
-        if (getContext() != null) {
-            imageFileName = "JPEG_" + timeStamp + "_";
-            storageDir = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "/" + folderName);
-        } else {
-            imageFileName = folderName + "/JPEG_" + timeStamp + "_";
-            storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        }
+        imageFileName = "JPEG_" + timeStamp + "_";
+        storageDir = new File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "/" + folderName);
 
         if (!storageDir.exists()) {
             storageDir.mkdirs();
@@ -571,7 +574,19 @@ public class BSImagePicker extends BottomSheetDialogFragment implements LoaderMa
         }
 
         // Save a file: path for use with ACTION_VIEW intents
-        currentPhotoUri = Uri.fromFile(image);
+        try {
+            currentPhotoUri = Uri.fromFile(image);
+        } catch (IllegalArgumentException e) {
+            try {
+                currentPhotoUri = FileProvider.getUriForFile(context,
+                                                             providerAuthority,
+                                                             image);
+            } catch (IllegalArgumentException e1) {
+                StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                StrictMode.setVmPolicy(builder.build());
+                currentPhotoUri = Uri.fromFile(image);
+            }
+        }
         return image;
     }
 
